@@ -1,0 +1,7 @@
+{% if item.annotations is defined %}
+, "annotations":{
+  {% for key, value in item.annotations.items() %}
+  "{{ key }}":"{{ value | to_json | regex_replace('(?<!\\\)\"','\\\"') }}" {% if not loop.last %}, {% endif %}
+  {% endfor %}
+}
+{% endif %}

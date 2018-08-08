@@ -1,0 +1,20 @@
+{
+    "apiVersion": "storage.k8s.io/v1",
+    "kind": "StorageClass",
+    "metadata": {
+        "name": "{{item.name}}",
+        {% include "include/labels.j2" %}
+        {% include "include/annotations.j2" %}
+    },
+    "provisioner": "{{ item.provisioner }}"
+    {% if item.parameters is defined %}
+    , "parameters": {{ item.parameters | to_json }}
+    {% endif %}
+    {% if item.reclaimPolicy is defined %}
+    , "reclaimPolicy": "{{ item.reclaimPolicy }}"
+    {% endif %} 
+    {% if item.volumeBindingMode %}
+    , "volumeBindingMode": "{{ item.volumeBindingMode }}"
+    {% endif %}
+}
+

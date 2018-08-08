@@ -1,0 +1,13 @@
+"labels": {
+  {% if item.labels is defined %}
+      {% for key, value in item.labels.items() %}
+          "{{ key }}":"{{ value }}" {% if not loop.last %}, {% endif %}
+      {% endfor %}
+      {% if item.labels.managed is not defined %}
+          , "managed": "true"
+      {% endif %}
+  {% else %}
+      "managed": "true"
+  {% endif %}
+
+}

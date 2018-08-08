@@ -1,0 +1,10 @@
+{
+  "kind": "CustomResourceDefinition",
+  "apiVersion": "apiextensions.k8s.io/v1beta1",
+  "metadata": {
+     "name": "{{item.name}}",
+     {% include "include/labels.j2" %}
+     {% include "include/annotations.j2" %}
+  },
+  "spec": {{ item.spec | to_json }}
+}

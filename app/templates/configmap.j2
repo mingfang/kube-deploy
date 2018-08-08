@@ -1,0 +1,23 @@
+{
+  "kind": "ConfigMap",
+  "apiVersion": "v1",
+  "metadata": {
+     "name": "{{item.name}}",
+      "namespace": "{{namespace.name}}",
+      {% include "include/labels.j2" %}
+      {% include "include/annotations.j2" %}
+  },
+  {% if item.data is defined %}
+  "data": {{ item.data | to_json }}
+  {% endif %}
+
+  {% if item['from-files'] is defined %}
+  "data": {
+    {% for from_file in item['from-files'] %}
+    "{{from_file}}": {% filter to_json %}{% include from_file %}{% endfilter %}{% if not loop.last %},
+    {% endif %}
+    {% endfor %}
+  }
+  {% endif %}
+
+}

@@ -1,0 +1,19 @@
+{
+  "kind": "Endpoints",
+  "apiVersion": "v1",
+  "metadata":{
+     "name": "{{item.name}}",
+      "namespace": "{{namespace.name}}",
+      {% include "include/labels.j2" %}
+      {% include "include/annotations.j2" %}
+  },
+  "subsets":[
+     {
+       "addresses":
+         {{ item.endpoints.addresses | to_json }}
+       ,
+       "ports": 
+         {{ item.ports | to_json }}
+     }
+  ]
+}

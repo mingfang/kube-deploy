@@ -1,0 +1,11 @@
+{
+    "kind": "PersistentVolume",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{item.name}}",
+         {% include "include/labels.j2" %}
+         {% include "include/annotations.j2" %}
+    },
+    "spec": {{item.spec | to_json}}
+}
+

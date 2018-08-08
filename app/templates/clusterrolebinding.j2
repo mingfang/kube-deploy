@@ -1,0 +1,21 @@
+{
+    "kind": "ClusterRoleBinding",
+    "apiVersion": "rbac.authorization.k8s.io/v1",
+    "metadata": {
+        "name": "{{ item.name }}",
+         {% include "include/labels.j2" %}
+         {% include "include/annotations.j2" %}
+    },
+    "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "{{ item.clusterRoleBinding }}"
+    },
+    "subjects": [
+        {
+            "kind": "ServiceAccount",
+            "name": "{{ item.name }}",
+            "namespace": "{{ namespace.name }}"
+        }
+    ]
+}
