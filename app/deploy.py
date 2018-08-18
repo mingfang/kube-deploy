@@ -357,6 +357,8 @@ def main():
     if(options.version):
         import sys
         print('python version: ' + sys.version)
+        import ruamel.yaml
+        print('ruamel version: ' + ruamel.yaml.__version__)
         import jinja2
         print('jinja2 version: ' + jinja2.__version__)
         from kubectl import KubeCtl

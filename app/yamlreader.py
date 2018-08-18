@@ -2,7 +2,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 __version__ = '3.0.3'
 
-from ruamel.yaml import YAML, MarkedYAMLError
+from ruamel.yaml import YAML
 yaml = YAML()
 # yaml.default_style='"'
 yaml.default_flow_style=False
@@ -111,7 +111,7 @@ def yaml_load(source, defaultdata=NO_DEFAULT):
                     for doc in new_data:
                         data = data_merge(data, doc)
                 logger.debug("YAML LOAD: %s", new_data)
-            except MarkedYAMLError as e:
+            except Exception as e:
                 logger.error("YAML Error: %s", e)
                 raise YamlReaderError("YAML Error: %s" % str(e))
     else:
@@ -120,30 +120,3 @@ def yaml_load(source, defaultdata=NO_DEFAULT):
             raise YamlReaderError("No YAML data found in %s" % source)
 
     return data
-
-
-def __main():
-    import optparse
-    parser = optparse.OptionParser(usage="%prog [options] source...",
-                                   description="Merge YAML data from given files, dir or file glob",
-                                   version="%" + "prog %s" % __version__,
-                                   prog="yamlreader")
-    parser.add_option("--debug", dest="debug", action="store_true", default=False,
-                      help="Enable debug logging [%default]")
-    options, args = parser.parse_args()
-    if options.debug:
-        logger = logging.getLogger()
-        loghandler = logging.StreamHandler()
-        loghandler.setFormatter(logging.Formatter('yamlreader: %(levelname)s: %(message)s'))
-        logger.addHandler(loghandler)
-        logger.setLevel(logging.DEBUG)
-
-    if not args:
-        parser.error("Need at least one argument")
-    try:
-        yaml.dump(yaml_load(args, defaultdata={}), sys.stdout)
-    except Exception as e:
-        parser.error(e)
-
-if __name__ == "__main__":
-    __main()
