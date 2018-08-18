@@ -340,6 +340,8 @@ def main():
                   help="path of kubeconfig", metavar="KUBECONFIG")
     parser.add_option("--dry-run", dest="dry_run", action="store_true", default=False,
                   help="don't make any changes")
+    parser.add_option("-V", "--version", dest="version", action="store_true", default=False,
+                  help="print version and exit")
 
     (options, args) = parser.parse_args()
 
@@ -351,6 +353,16 @@ def main():
 
     # args
     path = args[0] if args else '.'
+
+    if(options.version):
+        import sys
+        print('python version: ' + sys.version)
+        import jinja2
+        print('jinja2 version: ' + jinja2.__version__)
+        from kubectl import KubeCtl
+        kubectl = KubeCtl(bin='kubectl')
+        print(kubectl.execute('version --client --short'))
+        return 0
 
     # jinja
     jinja = jinjaenv.setupJinja(path)
