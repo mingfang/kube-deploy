@@ -1,8 +1,10 @@
 def setupJinja(path):
-    from jinja2 import Environment, FileSystemLoader, PackageLoader
+    from jinja2 import Environment, ChoiceLoader, FileSystemLoader, PackageLoader
     env = Environment(
-        trim_blocks=True,
-        loader=PackageLoader(__name__)
+        loader= ChoiceLoader([
+            FileSystemLoader(path),
+            PackageLoader(__name__)
+        ])
     )
 
     # jinja2 filters copied from ansible

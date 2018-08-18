@@ -1,10 +1,9 @@
 import jinjaenv
 import json
 
-env = jinjaenv.setupJinja('')
 
 # yamlreader to merge multiple yaml files into one
-def load_services(path):
+def load_services(path, jinja):
     from yamlreader import yaml_load as yamlreader
     import shlex
     import subprocess
@@ -32,8 +31,9 @@ def load_services(path):
     yaml.default_flow_style=False
     servicesStream = StringIO()
     yaml.dump(servicesTemplate, servicesStream)
-    servicesJinja = env.from_string(servicesStream.getvalue())
+    servicesJinja = jinja.from_string(servicesStream.getvalue())
     servicesRendered = servicesJinja.render(values)
+    # print(servicesRendered)
     services = yaml.load(servicesRendered)
     return services
 
@@ -57,104 +57,104 @@ def get_existing(kind, kubectl):
 processed = set()
 
 # general loop thru all namespaces
-def process_applies(services, existing):
+def process_applies(services, existing, jinja):
     applies = list()
     # priority classes are global and part of any namespaces so must be done first
     for priorityclass in services.get('priorityclasses', []):
-        rendered = env.get_template('priorityclass.j2').render({'item': priorityclass})
+        rendered = jinja.get_template('priorityclass.j2').render({'item': priorityclass})
         process(rendered, existing, applies)
     # todo: move crd to outside of any namespace
 
     # storageclass
     for storageclass in services.get('storageclasses', []):
         item = {'item': storageclass}
-        rendered = env.get_template('storageclass.j2').render(item)
+        rendered = jinja.get_template('storageclass.j2').render(item)
         process(rendered, existing, applies)
 
     for namespace in services.get('namespaces', []):
         # namespaces
-        rendered = env.get_template('namespace.j2').render({'item': {'name': namespace}})
+        rendered = jinja.get_template('namespace.j2').render({'item': {'name': namespace}})
         process(rendered, existing, applies)
 
         # persistentVolumes
         for persistentVolume in services['namespaces'][namespace].get('persistentVolumes', []):
             item = {'item': persistentVolume, 'namespace': {'name': namespace}}
-            rendered = env.get_template('persistentvolume.j2').render(item)
+            rendered = jinja.get_template('persistentvolume.j2').render(item)
             process(rendered, existing, applies)
 
         # persistentVolumeClaims
         for persistentVolumeClaim in services['namespaces'][namespace].get('persistentVolumeClaims', []):
             item = {'item': persistentVolumeClaim, 'namespace': {'name': namespace}}
-            rendered = env.get_template('persistentvolumeclaim.j2').render(item)
+            rendered = jinja.get_template('persistentvolumeclaim.j2').render(item)
             process(rendered, existing, applies)
 
         # limits
         limits = services['namespaces'][namespace].get('limits')
         if limits:
             item = {'item': {'name': namespace, 'limits': limits}, 'namespace': {'name': namespace}}
-            rendered = env.get_template('limits.j2').render(item)
+            rendered = jinja.get_template('limits.j2').render(item)
             process(rendered, existing, applies)
 
         # configmaps
         for configmap in services['namespaces'][namespace].get('configmaps', []):
             item = {'item': configmap, 'namespace': {'name': namespace}}
-            rendered = env.get_template('configmap.j2').render(item)
+            rendered = jinja.get_template('configmap.j2').render(item)
             process(rendered, existing, applies)
 
         # customresourcedefinitions
         # todo: crd does not belong to any namespace
         for customresourcedefinition in services['namespaces'][namespace].get('customresourcedefinitions', []):
             item = {'item': customresourcedefinition}
-            rendered = env.get_template('customresourcedefinition.j2').render(item)
+            rendered = jinja.get_template('customresourcedefinition.j2').render(item)
             process(rendered, existing, applies)
 
         # customresources
         for customresource in services['namespaces'][namespace].get('customresources', []):
             item = {'item': customresource, 'namespace': {'name': namespace}}
-            rendered = env.get_template('customresource.j2').render(item)
+            rendered = jinja.get_template('customresource.j2').render(item)
             process(rendered, existing, applies)
 
         # secrets
         for secret in services['namespaces'][namespace].get('secrets', []):
             item = {'item': secret, 'namespace': {'name': namespace}}
-            rendered = env.get_template('secret.j2').render(item)
+            rendered = jinja.get_template('secret.j2').render(item)
             process(rendered, existing, applies)
 
         # roles
         for role in services['namespaces'][namespace].get('roles', []):
             item = {'item': role, 'namespace': {'name': namespace}}
-            rendered = env.get_template('role.j2').render(item)
+            rendered = jinja.get_template('role.j2').render(item)
             process(rendered, existing, applies)
 
         # clusterRoles
         for clusterRole in services['namespaces'][namespace].get('clusterRoles', []):
             item = {'item': clusterRole, 'namespace': {'name': namespace}}
-            rendered = env.get_template('clusterrole.j2').render(item)
+            rendered = jinja.get_template('clusterrole.j2').render(item)
             process(rendered, existing, applies)
 
         # serviceAccounts
         for serviceAccount in services['namespaces'][namespace].get('serviceAccounts', []):
             # serviceAccount
             item = {'item': serviceAccount, 'namespace': {'name': namespace}}
-            rendered = env.get_template('serviceaccount.j2').render(item)
+            rendered = jinja.get_template('serviceaccount.j2').render(item)
             process(rendered, existing, applies)
 
             # role binding
             if 'roleBinding' in serviceAccount:
                 item = {'item': serviceAccount, 'namespace': {'name': namespace}}
-                rendered = env.get_template('rolebinding.j2').render(item)
+                rendered = jinja.get_template('rolebinding.j2').render(item)
                 process(rendered, existing, applies)
 
             # cluster role binding
             if 'clusterRoleBinding' in serviceAccount:
                 item = {'item': serviceAccount, 'namespace': {'name': namespace}}
-                rendered = env.get_template('clusterrolebinding.j2').render(item)
+                rendered = jinja.get_template('clusterrolebinding.j2').render(item)
                 process(rendered, existing, applies)
 
         # podpresets
         for podpreset in services['namespaces'][namespace].get('podpresets', []):
             item = {'item': podpreset, 'namespace': {'name': namespace}}
-            rendered = env.get_template('podpresets.j2').render(item)
+            rendered = jinja.get_template('podpresets.j2').render(item)
             process(rendered, existing, applies)
 
         # daemonsets
@@ -162,88 +162,87 @@ def process_applies(services, existing):
             # service accounts
             if 'roleBinding' in daemonset or 'clusterRoleBinding' in daemonset:
                 item = {'item': daemonset, 'namespace': {'name': namespace}}
-                rendered = env.get_template('serviceaccount.j2').render(item)
+                rendered = jinja.get_template('serviceaccount.j2').render(item)
                 process(rendered, existing, applies)
 
             # role binding
             if 'roleBinding' in daemonset:
                 item = {'item': daemonset, 'namespace': {'name': namespace}}
-                rendered = env.get_template('rolebinding.j2').render(item)
+                rendered = jinja.get_template('rolebinding.j2').render(item)
                 process(rendered, existing, applies)
 
             # cluster role binding
             if 'clusterRoleBinding' in daemonset:
                 item = {'item': daemonset, 'namespace': {'name': namespace}}
-                rendered = env.get_template('clusterrolebinding.j2').render(item)
+                rendered = jinja.get_template('clusterrolebinding.j2').render(item)
                 process(rendered, existing, applies)
 
             # daemonset
             item = {'item': daemonset, 'namespace': {'name': namespace}}
-            rendered = env.get_template('daemonset.j2').render(item)
+            rendered = jinja.get_template('daemonset.j2').render(item)
             process(rendered, existing, applies)
 
         # services and statefulsets
         for service in services['namespaces'][namespace].get('services', []):
+            # services
+            item = {'item': service, 'namespace': {'name': namespace}}
+            rendered = jinja.get_template('service.j2').render(item)
+            process(rendered, existing, applies)
+
             # network policy
             if 'networkpolicy' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('networkpolicy.j2').render(item)
+                rendered = jinja.get_template('networkpolicy.j2').render(item)
                 process(rendered, existing, applies)
 
             # service accounts
             if 'roleBinding' in service or 'clusterRoleBinding' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('serviceaccount.j2').render(item)
+                rendered = jinja.get_template('serviceaccount.j2').render(item)
                 process(rendered, existing, applies)
 
             # role binding
             if 'roleBinding' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('rolebinding.j2').render(item)
+                rendered = jinja.get_template('rolebinding.j2').render(item)
                 process(rendered, existing, applies)
 
             # cluster role binding
             if 'clusterRoleBinding' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('clusterrolebinding.j2').render(item)
-                process(rendered, existing, applies)
-
-            # services
-            if 'ports' in service:
-                item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('service.j2').render(item)
+                rendered = jinja.get_template('clusterrolebinding.j2').render(item)
                 process(rendered, existing, applies)
 
             # endpoints
             if 'endpoints' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('endpoints.j2').render(item)
+                rendered = jinja.get_template('endpoints.j2').render(item)
                 process(rendered, existing, applies)
 
             # statefulsets
             if 'stateful' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
                 item['global_podpresets'] = {'spec': []}
-                rendered = env.get_template('statefulset.j2').render(item)
+                rendered = jinja.get_template('statefulset.j2').render(item)
                 process(rendered, existing, applies)
 
             # deployments
-            else:
+            elif 'pod' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
                 item['global_podpresets'] = {'spec': []}
-                rendered = env.get_template('deployment.j2').render(item)
+                rendered = jinja.get_template('deployment.j2').render(item)
                 process(rendered, existing, applies)
 
             # hpa
             if 'autoscaler' in service:
                 item = {'item': service, 'namespace': {'name': namespace}}
-                rendered = env.get_template('hpa.j2').render(item)
+                rendered = jinja.get_template('hpa.j2').render(item)
                 process(rendered, existing, applies)
 
         # ingresses
         for ingress in services['namespaces'][namespace].get('ingresses', []):
             item = {'item': ingress, 'namespace': {'name': namespace}}
-            rendered = env.get_template('ingress.j2').render(item)
+            rendered = jinja.get_template('ingress.j2').render(item)
             process(rendered, existing, applies)
 
     return applies
@@ -283,7 +282,7 @@ def diff(existing, processed):
     return diffs
 
 def process(json_string, existing, applies):
-    # print string
+    # print(json_string)
     try:
         parsed = json.loads(json_string)
     except Exception as e:
@@ -353,8 +352,11 @@ def main():
     # args
     path = args[0] if args else '.'
 
+    # jinja
+    jinja = jinjaenv.setupJinja(path)
+
     # load services from files
-    services = load_services(path)
+    services = load_services(path, jinja)
 
     # kubectl cli wrapper
     from kubectl import KubeCtl
@@ -396,7 +398,7 @@ def main():
     existing = get_all_existing(kinds, kubectl)
 
     # compute what to apply
-    applies = process_applies(services, existing)
+    applies = process_applies(services, existing, jinja)
     filteredApplies = filterOnly(applies, namespaceOnly, kindOnly, nameOnly)
 
     # compute what to delete
