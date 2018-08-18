@@ -1,6 +1,7 @@
 FROM python:3.6-alpine as build
 RUN apk update
 RUN apk add build-base
+RUN pip install --upgrade pip
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
