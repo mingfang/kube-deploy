@@ -327,6 +327,17 @@ def filterOnly(target, namespaceOnly, kindOnly, nameOnly):
         filtered = list(filter(lambda apply: apply['key'][2] == nameOnly, filtered))
     return filtered
 
+def printVersion():
+    import sys
+    print('python version: ' + sys.version)
+    import ruamel.yaml
+    print('ruamel version: ' + ruamel.yaml.__version__)
+    import jinja2
+    print('jinja2 version: ' + jinja2.__version__)
+    from kubectl import KubeCtl
+    kubectl = KubeCtl(bin='kubectl')
+    print(kubectl.execute('version --client --short'))
+
 def main():
     from optparse import OptionParser
     parser = OptionParser()
@@ -355,15 +366,7 @@ def main():
     path = args[0] if args else '.'
 
     if(options.version):
-        import sys
-        print('python version: ' + sys.version)
-        import ruamel.yaml
-        print('ruamel version: ' + ruamel.yaml.__version__)
-        import jinja2
-        print('jinja2 version: ' + jinja2.__version__)
-        from kubectl import KubeCtl
-        kubectl = KubeCtl(bin='kubectl')
-        print(kubectl.execute('version --client --short'))
+        printVersion()
         return 0
 
     # jinja
