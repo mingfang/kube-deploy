@@ -1,6 +1,6 @@
 {
     "kind": "HorizontalPodAutoscaler",
-    "apiVersion": "autoscaling/v1",
+    "apiVersion": "autoscaling/v2beta1",
     "metadata": {
         "name": "{{item.name}}",
          "namespace": "{{namespace.name}}",
@@ -9,13 +9,18 @@
     },
     "spec": {
         "scaleTargetRef": {
-            "apiVersion": "extensions/v1beta1",
+            "apiVersion": "apps/v1",
             "kind": "Deployment",
             "name": "{{item.name}}"
         },
-       {% for key, value in item.autoscaler.items() %}
-       "{{key}}": {% if value is string %}"{% endif %}{{value}}{% if value is string %}"{% endif %}{% if not loop.last %},
-       {% endif %}
-       {% endfor %}
+        {% if item.autoscaler.minReplicas is defined %}
+        "minReplicas": {{ item.autoscaler.minReplicas }},
+        {% endif %}
+        {% if item.autoscaler.maxReplicas is defined %}
+        "maxReplicas": {{ item.autoscaler.maxReplicas }},
+        {% endif %}
+        {% if item.autoscaler.metrics is defined %}
+        "metrics": {{ item.autoscaler.metrics | to_json }}
+        {% endif %}
     }
 }
