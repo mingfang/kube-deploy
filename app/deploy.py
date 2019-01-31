@@ -12,14 +12,15 @@ def load_services(path, jinja):
 
     files = subprocess.check_output(shlex.split('find {} -name "*.yml" -type f ! -path "*/disabled/*"'.format(path)))
     files = files.split()
-    servicesTemplate = yamlreader(files, defaultdata={})
     print("\nYAML files in {}".format(path))
     from tabulate import tabulate; print(tabulate(map(lambda file: {'file': file}, files), headers={'file':'Path'}, showindex="always", tablefmt="fancy_grid"))
+
+    servicesTemplate = yamlreader(files, defaultdata={})
 
     #top level key: value
     values = {}
     for key, value in servicesTemplate.items():
-        if key in ['namespaces', 'priorityclasses']:
+        if key in ['namespaces', 'priorityclasses', 'templates']:
             continue
         values[key] = value
     # print("\nValues")
@@ -35,6 +36,20 @@ def load_services(path, jinja):
     servicesRendered = servicesJinja.render(values)
     # print(servicesRendered)
     services = yaml.load(servicesRendered)
+
+    # external templates
+    # for template in servicesTemplate.get('templates', []):
+    #     print(template)
+    #     values = template.items()
+    #     file = template['source']
+    #     servicesTemplate = yamlreader([file], defaultdata={})
+    #     servicesStream = StringIO()
+    #     yaml.dump(servicesTemplate, servicesStream)
+    #     servicesJinja = jinja.from_string(servicesStream.getvalue())
+    #     servicesRendered = servicesJinja.render(values)
+    #     print(servicesRendered)
+    #     services = yaml.load(servicesRendered)
+
     return services
 
 def get_all_existing(kinds, kubectl):
@@ -185,9 +200,10 @@ def process_applies(services, existing, jinja):
         # services and statefulsets
         for service in services['namespaces'][namespace].get('services', []):
             # services
-            item = {'item': service, 'namespace': {'name': namespace}}
-            rendered = jinja.get_template('service.j2').render(item)
-            process(rendered, existing, applies)
+            if 'ports' in service:
+                item = {'item': service, 'namespace': {'name': namespace}}
+                rendered = jinja.get_template('service.j2').render(item)
+                process(rendered, existing, applies)
 
             # network policy
             if 'networkpolicy' in service:
